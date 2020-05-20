@@ -12,20 +12,17 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 def start(update, context):
-    """Send a message when the command /start is issued."""
-    keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
-                 InlineKeyboardButton("Option 2", callback_data='2')],
-
-                [InlineKeyboardButton("Option 3", callback_data='3')]]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    update.message.reply_text('Hi! Use /set <seconds> to set a timer')
 
 
 def setup(update, context):
     """Start bot setup."""
     update.message.reply_text('Let\'s set you up!')
+
+
+def corona_status(context):
+    job = context.job
+    context.bot.send_message(job.context, text='Beep!')
 
 
 def error(update, context):
