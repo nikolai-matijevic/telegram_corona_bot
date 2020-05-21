@@ -15,17 +15,19 @@ api_url = 'https://api.covid19api.com/summary'
 
 
 def get(update, context):
+    update.message.reply_text('Requesting current stats...')
     with urllib.request.urlopen(api_url) as url:
         cases = json.loads(url.read().decode())
         global_cases = cases['Global']
     
-        global_total_confirmed = str(global_cases['TotalConfirmed'])
-        global_total_deaths = str(global_cases['TotalDeaths'])
-        global_total_recovered = str(global_cases['TotalRecovered'])
+        global_total_confirmed = global_cases['TotalConfirmed']
+        global_total_deaths = global_cases['TotalDeaths']
+        global_total_recovered = global_cases['TotalRecovered']
         
-        update.message.reply_text('Worldwide infections: ' + global_total_confirmed)
-        update.message.reply_text('Worldwide deaths: ' + global_total_deaths)
-        update.message.reply_text('Worldwide recoveries: ' + global_total_recovered)
+        update.message.reply_text(
+            'Total: ' + f'{global_total_confirmed:,}' + '\n' + \
+            'Deceased: ' + f'{global_total_deaths:,}' + '\n' + \
+            'Recovered: ' + f'{global_total_recovered:,}')
 
 
 def error(update, context):
