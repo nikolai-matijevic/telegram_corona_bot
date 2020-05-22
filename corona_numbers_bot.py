@@ -2,32 +2,41 @@
 Get daily updates on the current numbers of Infections in your country.
 """
 
-import logging, os, json, urllib.request
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ConversationHandler
+import logging, os, json, time
+from requests import request
+from requests_cache import install_cache
+from emoji import emojize
+from telegram.ext import Updater, CommandHandler
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
+install_cache('covid19api_cache', backend='sqlite', expire_after=600)
+
 api_url = 'https://api.covid19api.com/summary'
 
-
 def get(update, context):
-    update.message.reply_text('Requesting current stats...')
-    with urllib.request.urlopen(api_url) as url:
-        cases = json.loads(url.read().decode())
-        global_cases = cases['Global']
+    response = request("GET", api_url)
+    cases = json.loads(response.text)
+    now = time.ctime(int(time.time()))
+    logger.debug("Time: {0} / Used Cache: {1}".format(now, response.from_cache))
+    print()
+    global_cases = cases['Global']
+
+    last_update = cases['Date']
+    global_total_confirmed = global_cases['TotalConfirmed']
+    global_total_deaths = global_cases['TotalDeaths']
+    global_total_recovered = global_cases['TotalRecovered']
+    global_total_infected = global_total_confirmed - global_total_recovered - global_total_deaths
     
-        global_total_confirmed = global_cases['TotalConfirmed']
-        global_total_deaths = global_cases['TotalDeaths']
-        global_total_recovered = global_cases['TotalRecovered']
-        
-        update.message.reply_text(
-            'Total: ' + f'{global_total_confirmed:,}' + '\n' + \
-            'Deceased: ' + f'{global_total_deaths:,}' + '\n' + \
-            'Recovered: ' + f'{global_total_recovered:,}')
+    update.message.reply_text(
+        last_update + '\n\n' + \
+        emojize(':earth_americas:: ', use_aliases=True) + f'{global_total_confirmed:,}' + '\n' + \
+        emojize(':mask:: ', use_aliases=True) + f'{(global_total_infected):,}' + '\n' + \
+        emojize(':skull:: ', use_aliases=True) + f'{global_total_deaths:,}' + '\n' + \
+        emojize(':smiley:: ', use_aliases=True) + f'{global_total_recovered:,}')
 
 
 def error(update, context):
