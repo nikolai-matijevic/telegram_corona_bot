@@ -3,3 +3,5 @@ docker-compose.yml
 *.sqlite
 .vscode/*
 *.log
+venv/*
+secrets_file.json
