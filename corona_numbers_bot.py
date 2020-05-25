@@ -19,6 +19,15 @@ api_url = 'https://api.covid19api.com/'
 api_summary = api_url + 'summary'
 
 
+secrets_file = 'secrets_file.json'
+
+token = ""
+
+with open(secrets_file, 'r') as f:
+    bot_secrets = json.loads(f.read())
+    token = bot_secrets['TELEGRAM_BOT_TOKEN']
+
+
 def human_format(num):
     magnitude = 0
     while abs(num) >= 1000:
@@ -66,8 +75,7 @@ def error(update, context):
 
 
 def main():
-    #updater = Updater(os.environ['TOKEN'], use_context=True)
-    updater = Updater('1257960258:AAHaKvVgZTfXPQftC3mC0PuXW9La-Q3KkvU', use_context=True)
+    updater = Updater(token, use_context=True)
 
     dp = updater.dispatcher
 
