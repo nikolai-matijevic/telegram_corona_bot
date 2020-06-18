@@ -10,7 +10,7 @@ from emoji import EMOJI_UNICODE
 from telegram.ext import Updater, CommandHandler
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,15 @@ def request_global_numbers():
     response = request("GET", api_summary)
     cases = json.loads(response.text)
     now = time.ctime(int(time.time()))
+
     logger.debug("Time: {0} / Used Cache: {1}".format(now, response.from_cache))
 
     return cases
 
 
-def display_numbers(flag, last_update, total_confirmed, total_infected, total_deaths, total_recovered):
+def display_numbers(location, flag, last_update, total_confirmed, total_infected, total_deaths, total_recovered):
     return str(
-        last_update + ' (UTC)\n\n' + \
+        location + ' - ' + last_update + ' (UTC)\n\n' + \
         emojize(flag, use_aliases=True) + human_format(total_confirmed) + '\n' + \
         emojize(':mask:: ', use_aliases=True) + human_format(total_infected) + '\n' + \
         emojize(':skull:: ', use_aliases=True) + human_format(total_deaths) + '\n' + \
@@ -86,15 +87,19 @@ def get_global(update, context):
     global_total_recovered = global_cases['TotalRecovered']
     global_total_infected = global_total_confirmed - global_total_recovered - global_total_deaths
     
-    update.message.reply_text(display_numbers(':earth_americas:: ', last_update, global_total_confirmed, global_total_infected, global_total_deaths, global_total_recovered))
+    update.message.reply_text(display_numbers('Global', ':earth_americas:: ', last_update, global_total_confirmed, global_total_infected, global_total_deaths, global_total_recovered))
 
 
 def get_country(update, context):
     cases = request_global_numbers()
 
-    iso2 = context.args[0]
+    iso2 = str(context.args[0])
+    iso2 = str.upper(iso2)
 
     country = search_country(cases, iso2)
+
+    if country == None:
+        country_not_found(update, context)
 
     last_update = cases['Date']
 
@@ -105,7 +110,20 @@ def get_country(update, context):
 
     flag = search_country_flag(country['Country'])
 
-    update.message.reply_text(display_numbers(flag, last_update, total_confirmed, total_infected, total_deaths, total_recovered))
+    update.message.reply_text(display_numbers(country['Country'], flag, last_update, total_confirmed, total_infected, total_deaths, total_recovered))
+
+
+def list_countries(update, context):
+    list_of_countries = ""
+    
+    cases = request_global_numbers()
+
+    countries = cases['Countries']
+
+    for country in countries:
+        list_of_countries = list_of_countries + str("{} - {}\n").format(country['CountryCode'], country['Country'])
+
+    update.message.reply_text(list_of_countries)
 
 
 def search_country(cases, country_code):
@@ -114,17 +132,31 @@ def search_country(cases, country_code):
     for country in countries:
         if country['CountryCode'] == country_code:
             return country
+    
+    logger.warn("Unable to find country for country code {}".format(country_code))
+
+    return None
+
+
+def country_not_found(update, context):
+    update.message.reply_text(emojize(':disappointed_face: ', use_aliases=True) + "Country not found. Probably no numbers available.")
 
 
 def search_country_flag(country):
+    country = country.replace(" ", "_")
+    country = country.replace("and", "&")
+
     for key in EMOJI_UNICODE:
         if key == (':' + country + ':'):
             return EMOJI_UNICODE[key] + ': '
+    
+    return ':question_mark:: '
 
 
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+    update.message.reply_text(emojize(':warning: ', use_aliases=True) + " Unable to fulfil request.")
 
 
 def main():
@@ -135,6 +167,8 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
     dp.add_handler(CommandHandler("get", get, pass_args=True))
+    dp.add_handler(CommandHandler("list", list_countries))
+
 
     dp.add_error_handler(error)
 
