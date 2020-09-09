@@ -9,12 +9,25 @@ from emoji import emojize
 from emoji import EMOJI_UNICODE
 from telegram.ext import Updater, CommandHandler
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-install_cache('covid19api_cache', backend='sqlite', expire_after=600)
+fh = logging.FileHandler('bot.log')
+fh.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+
+logger.addHandler(fh)
+logger.addHandler(ch)
+
+
+install_cache('covid19api_cache', backend='sqlite', expire_after=60)
 
 api_url = 'https://api.covid19api.com/'
 api_summary = api_url + 'summary'
