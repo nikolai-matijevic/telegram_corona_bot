@@ -1,5 +1,5 @@
-Dockerfile
-docker-compose.yml
+#Dockerfile
+#docker-compose.yml
 *.sqlite
 .vscode/*
 *.log
