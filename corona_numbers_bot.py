@@ -18,6 +18,7 @@ install_cache('covid19api_cache', backend='sqlite', expire_after=600)
 
 api_url = 'https://api.covid19api.com/'
 api_summary = api_url + 'summary'
+api_countries = api_url + 'countries'
 
 
 secrets_file = 'secrets_file.json'
@@ -64,7 +65,7 @@ def start(update, context):
         emojize(':mask:: ', use_aliases=True) + 'Infected\n' + \
         emojize(':skull:: ', use_aliases=True) + 'Deceased\n' + \
         emojize(':smiley:: ', use_aliases=True) + 'Recovered\n\n' + \
-        'Get country specific numbers by using the two character country code:\n /get DE\n\n' + \
+        'Get country specific numbers by using the two character country code:\n https://www.iban.com/country-codes\n\n' + \
         'dev@nikolaimatijevic.de\n\nhttps://github.com/nikolai-matijevic/telegram_corona_bot'
     )
         
@@ -159,7 +160,7 @@ def error(update, context):
     update.message.reply_text(emojize(':warning: ', use_aliases=True) + " Unable to fulfil request.")
 
 
-def main():
+if __name__ == '__main__':
     updater = Updater(token, use_context=True)
 
     dp = updater.dispatcher
@@ -175,7 +176,3 @@ def main():
     updater.start_polling()
 
     updater.idle()
-
-
-if __name__ == '__main__':
-    main()
