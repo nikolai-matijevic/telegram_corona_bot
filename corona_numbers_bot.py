@@ -200,7 +200,7 @@ def error(update, context):
     update.message.reply_text(emojize(':warning: ', use_aliases=True) + " Unable to fulfil request.")
 
 
-def main():
+if __name__ == '__main__':
     q = mq.MessageQueue(all_burst_limit=3, all_time_limit_ms=3000)
     request = Request(con_pool_size=8)
 
