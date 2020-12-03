@@ -51,13 +51,10 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
-
-install_cache('covid19api_cache', backend='sqlite', expire_after=60)
+install_cache('covid19api_cache', backend='sqlite', expire_after=60, old_data_on_error=True)
 
 api_url = 'https://api.covid19api.com/'
 api_summary = api_url + 'summary'
-api_countries = api_url + 'countries'
-
 
 secrets_file = 'secrets_file.json'
 
