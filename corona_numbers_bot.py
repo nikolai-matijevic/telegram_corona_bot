@@ -3,11 +3,36 @@ Get daily updates on the current numbers of Infections in your country.
 """
 
 import logging, os, json, time
-from requests import request
+import requests
 from requests_cache import install_cache
 from emoji import emojize
 from emoji import EMOJI_UNICODE
 from telegram.ext import Updater, CommandHandler
+import telegram.bot
+from telegram.ext import messagequeue as mq
+from telegram.ext import MessageHandler, Filters
+from telegram.utils.request import Request
+
+
+class MQBot(telegram.bot.Bot):
+    '''A subclass of Bot which delegates send method handling to MQ'''
+    def __init__(self, *args, is_queued_def=True, mqueue=None, **kwargs):
+        super(MQBot, self).__init__(*args, **kwargs)
+        # below 2 attributes should be provided for decorator usage
+        self._is_messages_queued_default = is_queued_def
+        self._msg_queue = mqueue or mq.MessageQueue()
+
+    def __del__(self):
+        try:
+            self._msg_queue.stop()
+        except:
+            pass
+
+    @mq.queuedmessage
+    def send_message(self, *args, **kwargs):
+        '''Wrapped method would accept new `queued` and `isgroup`
+        OPTIONAL arguments'''
+        return super(MQBot, self).send_message(*args, **kwargs)
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +76,7 @@ def human_format(num):
 
 
 def request_global_numbers():
-    response = request("GET", api_summary)
+    response = requests.request("GET", api_summary)
     cases = json.loads(response.text)
     now = time.ctime(int(time.time()))
 
@@ -152,7 +177,9 @@ def search_country(cases, country_code):
 
 
 def country_not_found(update, context):
-    update.message.reply_text(emojize(':disappointed_face: ', use_aliases=True) + "Country not found. Probably no numbers available.")
+    chatid = update.message.chat_id
+    context.bot.send_message(chat_id=chatid, text=(emojize(':disappointed_face: ', use_aliases=True) + "Country not found. Probably no numbers available."))
+    # update.message.reply_text(emojize(':disappointed_face: ', use_aliases=True) + "Country not found. Probably no numbers available.")
 
 
 def search_country_flag(country):
@@ -173,7 +200,12 @@ def error(update, context):
 
 
 def main():
-    updater = Updater(token, use_context=True)
+    q = mq.MessageQueue(all_burst_limit=3, all_time_limit_ms=3000)
+    request = Request(con_pool_size=8)
+
+    bot = MQBot(token, request=request, mqueue=q)
+
+    updater = Updater(bot=bot, use_context=True)
 
     dp = updater.dispatcher
 
